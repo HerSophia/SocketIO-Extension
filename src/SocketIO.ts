@@ -75,7 +75,12 @@ export async function connectRelay(opts: ConnectOptions) {
   const ns = (opts.namespace || '').startsWith('/') ? opts.namespace! : `/${opts.namespace || ''}`;
   const url = `${opts.url}${ns}`;
   currentStreamDefault = !!opts.stream;
-  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault });
+  console.info("[SocketIO/connectRelay] '准备连接'", {
+    url,
+    namespace: ns,
+    tokenPresent: !!opts.token,
+    streamDefault: currentStreamDefault,
+  });
   if (currentSocket) {
     try {
       console.info("[SocketIO/connectRelay] '断开旧连接'");
@@ -94,22 +99,22 @@ export async function connectRelay(opts: ConnectOptions) {
   });
   currentSocket = s;
   console.info("[SocketIO/connectRelay] 'Socket 创建完成，等待连接'");
- 
+
   s.on('connect', () => {
     console.info("[SocketIO/connectRelay] '已连接'");
     notifyStatus(true);
   });
-  s.on('disconnect', (reason) => {
+  s.on('disconnect', reason => {
     console.warn("[SocketIO/connectRelay] '已断开'", { reason });
     notifyStatus(false);
   });
- 
+
   // OpenAI chat.completions.create 入口
   s.on('openai.chat.completions.create', (payload: ChatCompletionsCreatePayload) => {
     console.info("[SocketIO/connectRelay] '收到创建请求'", payload);
     void handleChatCompletionsCreate(payload);
   });
- 
+
   // 取消/停止指定请求（通过 req_id -> generation_id）
   s.on('openai.abort', (data: { id?: string; req_id?: string }) => {
     console.info("[SocketIO/connectRelay] '收到中止请求'", data);
@@ -191,22 +196,22 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     console.warn("[SocketIO/handleChatCompletionsCreate] '无有效 socket，忽略请求'");
     return;
   }
- 
+
   const reqId = payload.id || uuidv4();
   const genId = payload.tavern?.generation_id || uuidv4();
   reqToGen.set(reqId, genId);
- 
+
   const stream = payload.stream ?? currentStreamDefault ?? true;
- 
+
   const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
- 
+
   // 选择使用 generate 还是 generateRaw
   const useRaw =
     payload.tavern?.use_raw === true ||
     payload.method === 'generateRaw' ||
     Array.isArray(payload.tavern?.ordered_prompts);
   const method: 'generate' | 'generateRaw' = useRaw ? 'generateRaw' : 'generate';
- 
+
   // 构建配置
   const config: any = {
     user_input,
@@ -220,7 +225,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   if (method === 'generateRaw') {
     config.ordered_prompts = payload.tavern?.ordered_prompts;
   }
- 
+
   const TH: any = (window as any).TavernHelper;
   if (!TH?.[method]) {
     console.error("[SocketIO/handleChatCompletionsCreate] 'TavernHelper 方法不可用'", { method });
@@ -230,9 +235,16 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     });
     return;
   }
- 
-  console.info("[SocketIO/handleChatCompletionsCreate] '开始生成'", { reqId, genId, stream, method, model: payload.model, user_input_preview: (user_input || '').slice(0, 120) });
- 
+
+  console.info("[SocketIO/handleChatCompletionsCreate] '开始生成'", {
+    reqId,
+    genId,
+    stream,
+    method,
+    model: payload.model,
+    user_input_preview: (user_input || '').slice(0, 120),
+  });
+
   // 中转前应用酒馆正则
   const regexProcess = (text: string): string => {
     try {
@@ -246,7 +258,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     }
     return text;
   };
- 
+
   let full = '';
   const onInc = (incremental: string, id: string) => {
     if (id !== genId) return;
@@ -273,7 +285,11 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     if (id !== genId) return;
     try {
       const finalText = text ?? full;
-      console.info("[SocketIO/handleChatCompletionsCreate/onEnd] '生成结束'", { id, stream, final_len: (finalText || '').length });
+      console.info("[SocketIO/handleChatCompletionsCreate/onEnd] '生成结束'", {
+        id,
+        stream,
+        final_len: (finalText || '').length,
+      });
       if (stream) {
         const done = toStreamChunk({
           reqId,
@@ -298,7 +314,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
       console.info("[SocketIO/handleChatCompletionsCreate] '清理完成并移除映射'", { reqId });
     }
   };
- 
+
   const pmListener = (ev: MessageEvent) => {
     const data = (ev as any)?.data;
     if (!data || data.source !== 'socketio-extension') return;
@@ -317,7 +333,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
       console.error("[SocketIO/handleChatCompletionsCreate/pmListener] '处理桥接事件失败'", e);
     }
   };
- 
+
   const cleanup = () => {
     try {
       // 清理 iframe 事件监听（如可用）
@@ -334,7 +350,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
       }
     }
   };
- 
+
   // 注册监听以获取流式 token 与结束事件（优先使用 postMessage 桥）
   try {
     window.addEventListener('message', pmListener as any);
@@ -349,14 +365,14 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   } catch (e) {
     /* ignore */
   }
- 
+
   // 告知请求已受理
   socket.emit('openai.chat.completions.accepted', {
     id: reqId,
     generation_id: genId,
   });
   console.info("[SocketIO/handleChatCompletionsCreate] '已受理请求'", { reqId, generation_id: genId });
- 
+
   try {
     await TH[method](config);
   } catch (e: any) {

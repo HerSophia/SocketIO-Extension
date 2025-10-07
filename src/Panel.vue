@@ -110,7 +110,11 @@ function applyConnected(val: boolean) {
 onRelayStatus(applyConnected);
 
 async function ensureConnection() {
-  console.info("[Panel.vue/ensureConnection] '开始检查并处理连接'", { enabled: settings.value.socket_enabled, url: settings.value.server_url, namespace: settings.value.namespace });
+  console.info("[Panel.vue/ensureConnection] '开始检查并处理连接'", {
+    enabled: settings.value.socket_enabled,
+    url: settings.value.server_url,
+    namespace: settings.value.namespace,
+  });
   if (settings.value.socket_enabled) {
     try {
       console.info("[Panel.vue/ensureConnection] '安装正则桥接'");
@@ -143,7 +147,7 @@ async function ensureConnection() {
 
 watch(
   () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token],
-  (vals) => {
+  vals => {
     console.info("[Panel.vue/watch] '设置变更触发重联检查'", {
       socket_enabled: settings.value.socket_enabled,
       server_url: settings.value.server_url,
