@@ -36,7 +36,12 @@
         </div>
 
         <div class="flex-container">
-          <span>{{ t`状态` }}: <b :style="{ color: connected ? 'limegreen' : 'orangered' }">{{ connected ? t`已连接` : t`未连接` }}</b></span>
+          <span
+            >{{ t`状态` }}:
+            <b :style="{ color: connected ? 'limegreen' : 'orangered' }">{{
+              connected ? t`已连接` : t`未连接`
+            }}</b></span
+          >
           <input class="menu_button" type="submit" :value="connected ? t`断开` : t`连接`" @click="toggleConnection" />
         </div>
 
@@ -83,12 +88,7 @@ async function ensureConnection() {
 }
 
 watch(
-  () => [
-    settings.value.socket_enabled,
-    settings.value.server_url,
-    settings.value.namespace,
-    settings.value.auth_token,
-  ],
+  () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token],
   () => {
     // 当配置变化时尝试重连或断开
     ensureConnection();

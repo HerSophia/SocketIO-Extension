@@ -174,10 +174,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const stream = payload.stream ?? currentStreamDefault ?? true;
 
-  const user_input =
-    payload.user_input ??
-    payload.tavern?.user_input ??
-    lastUserInputFromMessages(payload.messages);
+  const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
 
   const config: any = {
     user_input,
