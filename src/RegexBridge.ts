@@ -18,7 +18,7 @@ export async function installRegexBridge(): Promise<void> {
     }
 
     const bridgeName = 'SocketIO-Bridge';
-    const findRe = '<socket></socket>'; // 精确匹配占位符
+    const findRe = '<socket>([\\s\\S]*?)</socket>'; // 捕获内部内容的非贪婪匹配，便于后续扩展
     const replacement = buildIframeReplacement();
 
     await TH.updateTavernRegexesWith(async (regexes: any[]) => {
