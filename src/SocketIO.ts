@@ -79,7 +79,13 @@ export async function connectRelay(opts: ConnectOptions) {
   if (hadStreamOpt) {
     currentStreamDefault = opts.stream === true;
   }
-  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault, streamOverride: hadStreamOpt });
+  console.info("[SocketIO/connectRelay] '准备连接'", {
+    url,
+    namespace: ns,
+    tokenPresent: !!opts.token,
+    streamDefault: currentStreamDefault,
+    streamOverride: hadStreamOpt,
+  });
   if (currentSocket) {
     try {
       console.info("[SocketIO/connectRelay] '断开旧连接'");
