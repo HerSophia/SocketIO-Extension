@@ -74,13 +74,12 @@ export function isConnected() {
 export async function connectRelay(opts: ConnectOptions) {
   const ns = (opts.namespace || '').startsWith('/') ? opts.namespace! : `/${opts.namespace || ''}`;
   const url = `${opts.url}${ns}`;
-  currentStreamDefault = !!opts.stream;
-  console.info("[SocketIO/connectRelay] '准备连接'", {
-    url,
-    namespace: ns,
-    tokenPresent: !!opts.token,
-    streamDefault: currentStreamDefault,
-  });
+  // 仅在明确提供 stream 时覆盖默认值；否则保持之前的默认 true，以便启用增量流式
+  const hadStreamOpt = typeof opts.stream === 'boolean';
+  if (hadStreamOpt) {
+    currentStreamDefault = opts.stream === true;
+  }
+  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault, streamOverride: hadStreamOpt });
   if (currentSocket) {
     try {
       console.info("[SocketIO/connectRelay] '断开旧连接'");
