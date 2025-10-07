@@ -11,21 +11,21 @@
   --sx-gap: 10px;
   --sx-stack-md: 12px;
   --sx-pad: 12px;
-  --sx-t: 160ms cubic-bezier(.2,.8,.2,1);
+  --sx-t: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Color system (Dark default) */
   --sx-surface: rgba(32, 36, 44, 0.65);
   --sx-surface-2: rgba(42, 48, 60, 0.6);
   --sx-border: rgba(110, 120, 140, 0.35);
-  --sx-text: #E8EBF0;
-  --sx-text-muted: #AAB3C2;
+  --sx-text: #e8ebf0;
+  --sx-text-muted: #aab3c2;
 
   /* Brand / primary */
-  --sx-primary: #8AB4F8;
+  --sx-primary: #8ab4f8;
   --sx-primary-rgb: 138, 180, 248;
 
   /* Elevation */
-  --sx-shadow: 0 6px 24px rgba(0,0,0,0.28);
+  --sx-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
 
   /* Typography smoothing */
   -webkit-font-smoothing: antialiased;
@@ -38,9 +38,9 @@
     --sx-surface: rgba(255, 255, 255, 0.85);
     --sx-surface-2: rgba(248, 250, 252, 0.9);
     --sx-border: rgba(0, 20, 40, 0.12);
-    --sx-text: #1F2430;
+    --sx-text: #1f2430;
     --sx-text-muted: #516070;
-    --sx-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    --sx-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   }
 }
 
@@ -50,9 +50,9 @@ body.light-theme #tavern_extension_example,
   --sx-surface: rgba(255, 255, 255, 0.85);
   --sx-surface-2: rgba(248, 250, 252, 0.9);
   --sx-border: rgba(0, 20, 40, 0.12);
-  --sx-text: #1F2430;
+  --sx-text: #1f2430;
   --sx-text-muted: #516070;
-  --sx-shadow: 0 8px 28px rgba(0,0,0,0.12);
+  --sx-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
 }
 
 /* Localized box-sizing for robustness */
@@ -71,7 +71,7 @@ body.light-theme #tavern_extension_example,
 #tavern_extension_example .sx-card {
   border-radius: var(--sx-radius);
   border: 1px solid var(--sx-border);
-  background: linear-gradient(180deg, var(--sx-surface), rgba(0,0,0,0.03));
+  background: linear-gradient(180deg, var(--sx-surface), rgba(0, 0, 0, 0.03));
   backdrop-filter: saturate(120%) blur(8px);
   box-shadow: var(--sx-shadow);
   overflow: hidden;
@@ -96,7 +96,9 @@ body.light-theme #tavern_extension_example,
 /* Header icon subtle emphasis */
 #tavern_extension_example .inline-drawer-header .inline-drawer-icon {
   color: var(--sx-text-muted);
-  transition: color var(--sx-t), transform var(--sx-t);
+  transition:
+    color var(--sx-t),
+    transform var(--sx-t);
 }
 #tavern_extension_example .inline-drawer-header:hover .inline-drawer-icon {
   color: var(--sx-text);
@@ -126,7 +128,7 @@ body.light-theme #tavern_extension_example,
 #tavern_extension_example .sx-col-label {
   color: var(--sx-text-muted);
   font-weight: 600;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
 }
 
 /* Inputs */
@@ -141,22 +143,23 @@ body.light-theme #tavern_extension_example,
   background: var(--sx-surface-2);
   color: var(--sx-text);
   outline: none;
-  transition: border-color var(--sx-t),
-              box-shadow var(--sx-t),
-              background-color var(--sx-t),
-              color var(--sx-t);
+  transition:
+    border-color var(--sx-t),
+    box-shadow var(--sx-t),
+    background-color var(--sx-t),
+    color var(--sx-t);
 }
 #tavern_extension_example .sx-input::placeholder {
   color: var(--sx-text-muted);
 }
 #tavern_extension_example .sx-input:focus {
-  border-color: rgba(var(--sx-primary-rgb), .75);
+  border-color: rgba(var(--sx-primary-rgb), 0.75);
   box-shadow:
-    0 0 0 3px rgba(var(--sx-primary-rgb), .22),
-    inset 0 0 0 1px rgba(var(--sx-primary-rgb), .15);
+    0 0 0 3px rgba(var(--sx-primary-rgb), 0.22),
+    inset 0 0 0 1px rgba(var(--sx-primary-rgb), 0.15);
 }
 #tavern_extension_example .sx-input:disabled {
-  opacity: .6;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -170,13 +173,15 @@ body.light-theme #tavern_extension_example,
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
-  transition: color var(--sx-t), opacity var(--sx-t);
+  transition:
+    color var(--sx-t),
+    opacity var(--sx-t);
 }
 #tavern_extension_example .sx-link-btn:hover {
   color: var(--sx-text);
 }
 #tavern_extension_example .sx-link-btn:focus-visible {
-  outline: 2px solid rgba(var(--sx-primary-rgb), .7);
+  outline: 2px solid rgba(var(--sx-primary-rgb), 0.7);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -186,30 +191,28 @@ body.light-theme #tavern_extension_example,
   border-radius: 8px;
   border: 1px solid var(--sx-border);
   padding: 6px 12px;
-  background:
-    linear-gradient(180deg,
-      rgba(var(--sx-primary-rgb), .16),
-      rgba(var(--sx-primary-rgb), .10));
+  background: linear-gradient(180deg, rgba(var(--sx-primary-rgb), 0.16), rgba(var(--sx-primary-rgb), 0.1));
   color: var(--sx-text);
-  text-shadow: 0 1px 0 rgba(0,0,0,.12);
-  transition: transform var(--sx-t),
-              background-color var(--sx-t),
-              border-color var(--sx-t),
-              box-shadow var(--sx-t),
-              color var(--sx-t);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+  transition:
+    transform var(--sx-t),
+    background-color var(--sx-t),
+    border-color var(--sx-t),
+    box-shadow var(--sx-t),
+    color var(--sx-t);
 }
 #tavern_extension_example .menu_button.sx-cta:hover {
   transform: translateY(-1px);
-  border-color: rgba(var(--sx-primary-rgb), .65);
+  border-color: rgba(var(--sx-primary-rgb), 0.65);
   box-shadow:
-    0 6px 18px rgba(0,0,0,.25),
-    0 0 0 3px rgba(var(--sx-primary-rgb), .22) inset;
+    0 6px 18px rgba(0, 0, 0, 0.25),
+    0 0 0 3px rgba(var(--sx-primary-rgb), 0.22) inset;
 }
 #tavern_extension_example .menu_button.sx-cta:active {
   transform: translateY(0);
   box-shadow:
-    0 2px 8px rgba(0,0,0,.2),
-    0 0 0 2px rgba(var(--sx-primary-rgb), .22) inset;
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 2px rgba(var(--sx-primary-rgb), 0.22) inset;
 }
 
 /* Secondary text and helper copy */
@@ -230,7 +233,7 @@ body.light-theme #tavern_extension_example,
 #tavern_extension_example b {
   color: var(--sx-text);
   font-weight: 700;
-  letter-spacing: .2px;
+  letter-spacing: 0.2px;
 }
 
 /* Compact hr that respects our palette */
@@ -239,5 +242,5 @@ body.light-theme #tavern_extension_example,
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--sx-border), transparent);
   margin: 4px 0 0 0;
-  opacity: .9;
+  opacity: 0.9;
 }

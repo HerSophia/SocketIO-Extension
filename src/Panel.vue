@@ -12,12 +12,7 @@
             <input v-model="settings.socket_enabled" type="checkbox" />
             <span>{{ t`启用 SocketIO 中转` }}</span>
           </label>
-          <button
-            type="button"
-            class="sx-link-btn"
-            @click="tipEnabled = !tipEnabled"
-            aria-label="这是什么"
-          >
+          <button type="button" class="sx-link-btn" @click="tipEnabled = !tipEnabled" aria-label="这是什么">
             Tips
           </button>
         </div>
@@ -27,17 +22,8 @@
 
         <div class="sx-grid">
           <label class="sx-col-label">{{ t`服务器 URL` }}</label>
-          <input
-            v-model="settings.server_url"
-            class="text_pole sx-input"
-            placeholder="http://localhost:3001"
-          />
-          <button
-            type="button"
-            class="sx-col-full sx-link-btn"
-            @click="tipServer = !tipServer"
-            aria-label="这是什么"
-          >
+          <input v-model="settings.server_url" class="text_pole sx-input" placeholder="http://localhost:3001" />
+          <button type="button" class="sx-col-full sx-link-btn" @click="tipServer = !tipServer" aria-label="这是什么">
             Tips
           </button>
         </div>
@@ -47,17 +33,8 @@
 
         <div class="sx-grid">
           <label class="sx-col-label">{{ t`命名空间` }}</label>
-          <input
-            v-model="settings.namespace"
-            class="text_pole sx-input"
-            placeholder="/st"
-          />
-          <button
-            type="button"
-            class="sx-col-full sx-link-btn"
-            @click="tipNS = !tipNS"
-            aria-label="这是什么"
-          >
+          <input v-model="settings.namespace" class="text_pole sx-input" placeholder="/st" />
+          <button type="button" class="sx-col-full sx-link-btn" @click="tipNS = !tipNS" aria-label="这是什么">
             Tips
           </button>
         </div>
@@ -67,17 +44,8 @@
 
         <div class="sx-grid">
           <label class="sx-col-label">{{ t`鉴权 Token（可选）` }}</label>
-          <input
-            v-model="settings.auth_token"
-            class="text_pole sx-input"
-            placeholder=""
-          />
-          <button
-            type="button"
-            class="sx-col-full sx-link-btn"
-            @click="tipToken = !tipToken"
-            aria-label="这是什么"
-          >
+          <input v-model="settings.auth_token" class="text_pole sx-input" placeholder="" />
+          <button type="button" class="sx-col-full sx-link-btn" @click="tipToken = !tipToken" aria-label="这是什么">
             Tips
           </button>
         </div>
@@ -90,14 +58,7 @@
             <input v-model="settings.use_stream" type="checkbox" />
             <span>{{ t`启用流式响应（OpenAI SSE 兼容）` }}</span>
           </label>
-          <button
-            type="button"
-            class="sx-link-btn"
-            @click="tipStream = !tipStream"
-            aria-label="这是什么"
-          >
-            Tips
-          </button>
+          <button type="button" class="sx-link-btn" @click="tipStream = !tipStream" aria-label="这是什么">Tips</button>
         </div>
         <p v-if="tipStream" class="sx-hint">
           {{ t`勾选后，结果将以流的方式分段推送（delta 片段），与 OpenAI SSE 行为一致；关闭则一次性返回完整结果。` }}
