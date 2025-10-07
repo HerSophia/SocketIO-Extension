@@ -27,7 +27,9 @@ function ensureTailwindCdn(): Promise<void> {
 }
 
 $(() => {
-  ensureTailwindCdn().catch(() => {}).finally(() => {
-    initPanel();
-  });
+  ensureTailwindCdn()
+    .catch(() => {})
+    .finally(() => {
+      initPanel();
+    });
 });
