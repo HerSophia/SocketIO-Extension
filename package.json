@@ -6,7 +6,8 @@
     "watch": "vite build --watch --mode development",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html,vue}\"",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "server:dev": "node --loader ts-node/esm server/index.ts"
   },
   "browserslist": [
     "defaults and partially supports es6-module"
