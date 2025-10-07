@@ -209,7 +209,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
       console.error(e);
     }
   };
-  const onFull = (fullText: string, id: string) => {
+  const onFull = (_fullText: string, id: string) => {
     if (id !== genId) return;
     // 可选：也可在此发整段快照
   };

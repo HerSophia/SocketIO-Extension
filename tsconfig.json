@@ -47,7 +47,8 @@
     "src/**/*.d.ts",
     "src/**/*.vue",
     "@types/**/*.d.ts",
-    "../../../../**/*.js", // for intelligence
+    "../../../../public/**/*.js",
+    "../../../../public/**/*.d.ts"
   ],
   "exclude": [
     "**/node_modules/**",
