@@ -103,29 +103,39 @@ const tipToken = ref(false);
 const tipStream = ref(false);
 
 function applyConnected(val: boolean) {
+  console.info("[Panel.vue/applyConnected] '更新连接状态'", { value: val });
   connected.value = val;
 }
 
 onRelayStatus(applyConnected);
 
 async function ensureConnection() {
+  console.info("[Panel.vue/ensureConnection] '开始检查并处理连接'", { enabled: settings.value.socket_enabled, url: settings.value.server_url, namespace: settings.value.namespace });
   if (settings.value.socket_enabled) {
     try {
-      // 安装桥接正则，确保 <socket></socket> 被渲染为可监听的 iframe
+      console.info("[Panel.vue/ensureConnection] '安装正则桥接'");
       await installRegexBridge();
+      console.info("[Panel.vue/ensureConnection] '尝试连接中转'", {
+        url: settings.value.server_url,
+        namespace: settings.value.namespace,
+        tokenPresent: !!settings.value.auth_token,
+        stream: settings.value.use_stream,
+      });
       await connectRelay({
         url: settings.value.server_url,
         namespace: settings.value.namespace,
         token: settings.value.auth_token,
         stream: settings.value.use_stream,
       });
+      console.info("[Panel.vue/ensureConnection] '连接成功'");
       toastr.success('SocketIO 已连接');
     } catch (e) {
-      console.error(e);
+      console.error("[Panel.vue/ensureConnection] '连接失败'", e);
       toastr.error('SocketIO 连接失败，请检查服务器与命名空间');
       applyConnected(false);
     }
   } else {
+    console.info("[Panel.vue/ensureConnection] '未启用，执行断开'");
     disconnectRelay();
     applyConnected(false);
   }
@@ -133,18 +143,25 @@ async function ensureConnection() {
 
 watch(
   () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token],
-  () => {
-    // 当配置变化时尝试重连或断开
+  (vals) => {
+    console.info("[Panel.vue/watch] '设置变更触发重联检查'", {
+      socket_enabled: settings.value.socket_enabled,
+      server_url: settings.value.server_url,
+      namespace: settings.value.namespace,
+      auth_token_present: !!settings.value.auth_token,
+    });
     ensureConnection();
   },
   { immediate: true },
 );
 
 function toggleConnection() {
+  console.info("[Panel.vue/toggleConnection] '切换连接状态'", { connected: connected.value });
   if (connected.value) {
     disconnectRelay();
     applyConnected(false);
     toastr.info('SocketIO 已断开');
+    console.info("[Panel.vue/toggleConnection] '已断开'");
   } else {
     ensureConnection();
   }

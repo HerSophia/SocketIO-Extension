@@ -68,16 +68,41 @@ export async function installRegexBridge(): Promise<void> {
 function buildIframeReplacement(): string {
   // 使用模板字符串避免繁琐转义与拼接错误；保留 $1 以显示/携带占位符内部内容
   const html = `
-<div class="socketio-bridge" data-socket-content="$1">SocketIO Bridge Active</div>
+<script src="https://cdn.tailwindcss.com"></script>
+<div class="socketio-bridge bg-slate-800/80 border border-slate-700 rounded-md shadow p-3 my-2 space-y-2" data-socket-content="$1">
+  <div class="text-xs uppercase tracking-wide text-slate-400">SocketIO Bridge</div>
+  <div class="text-xs text-slate-400" data-role="status">等待生成完成...</div>
+  <pre class="whitespace-pre-wrap text-sm text-slate-100 font-mono bg-slate-900/80 rounded p-2 border border-slate-700" data-role="full"></pre>
+</div>
 <script>(function(){
   try {
+    function $(sel, root){ return (root||document).querySelector(sel); }
     function post(t, p) {
       try {
         parent.postMessage({ source: 'socketio-extension', type: t, payload: p }, '*');
       } catch (e) {}
     }
+    var scriptEl = document.currentScript;
+    var container = scriptEl && scriptEl.previousElementSibling;
+    if (!container || !container.classList.contains('socketio-bridge')) {
+      post('BRIDGE_ERROR', { message: 'container not found' });
+    }
+    var fullPre = container ? container.querySelector('pre[data-role="full"]') : null;
+    var statusEl = container ? container.querySelector('[data-role="status"]') : null;
+    function setStatus(text){
+      if (statusEl) statusEl.textContent = text;
+    }
+    function renderFull(x, id){
+      if (!fullPre) return;
+      setStatus('已接收完整内容');
+      fullPre.textContent = (x || '');
+      try { fullPre.scrollIntoView({ block: 'nearest' }); } catch (e) {}
+    }
     function onInc(x, id) { post('STREAM_TOKEN_RECEIVED_INCREMENTALLY', { incremental_text: x || '', id: id }); }
-    function onFull(x, id) { post('STREAM_TOKEN_RECEIVED_FULLY', { full_text: x || '', id: id }); }
+    function onFull(x, id) {
+      post('STREAM_TOKEN_RECEIVED_FULLY', { full_text: x || '', id: id });
+      renderFull(x, id);
+    }
     function onEnd(x, id) { post('GENERATION_ENDED', { text: x || '', id: id }); }
     if (typeof eventOn === 'function' && typeof iframe_events !== 'undefined') {
       try {

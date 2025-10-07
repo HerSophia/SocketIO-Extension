@@ -51,17 +51,19 @@ const statusWatchers: ((s: boolean) => void)[] = [];
 
 function notifyStatus(s: boolean) {
   _connected = s;
+  console.info("[SocketIO/notifyStatus] '连接状态更新'", { connected: s });
   for (const fn of statusWatchers) {
     try {
       fn(s);
     } catch (e) {
-      console.error(e);
+      console.error("[SocketIO/notifyStatus] '回调执行失败'", e);
     }
   }
 }
 
 export function onRelayStatus(cb: (s: boolean) => void) {
   statusWatchers.push(cb);
+  console.info("[SocketIO/onRelayStatus] '注册状态监听器'", { watchersCount: statusWatchers.length });
   cb(_connected);
 }
 
@@ -73,11 +75,13 @@ export async function connectRelay(opts: ConnectOptions) {
   const ns = (opts.namespace || '').startsWith('/') ? opts.namespace! : `/${opts.namespace || ''}`;
   const url = `${opts.url}${ns}`;
   currentStreamDefault = !!opts.stream;
+  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault });
   if (currentSocket) {
     try {
+      console.info("[SocketIO/connectRelay] '断开旧连接'");
       currentSocket.disconnect();
     } catch (e) {
-      /* ignore */
+      console.error("[SocketIO/connectRelay] '断开旧连接失败'", e);
     }
     currentSocket = null;
   }
@@ -89,21 +93,26 @@ export async function connectRelay(opts: ConnectOptions) {
     reconnectionDelayMax: 10000,
   });
   currentSocket = s;
-
+  console.info("[SocketIO/connectRelay] 'Socket 创建完成，等待连接'");
+ 
   s.on('connect', () => {
+    console.info("[SocketIO/connectRelay] '已连接'");
     notifyStatus(true);
   });
-  s.on('disconnect', () => {
+  s.on('disconnect', (reason) => {
+    console.warn("[SocketIO/connectRelay] '已断开'", { reason });
     notifyStatus(false);
   });
-
+ 
   // OpenAI chat.completions.create 入口
   s.on('openai.chat.completions.create', (payload: ChatCompletionsCreatePayload) => {
+    console.info("[SocketIO/connectRelay] '收到创建请求'", payload);
     void handleChatCompletionsCreate(payload);
   });
-
+ 
   // 取消/停止指定请求（通过 req_id -> generation_id）
   s.on('openai.abort', (data: { id?: string; req_id?: string }) => {
+    console.info("[SocketIO/connectRelay] '收到中止请求'", data);
     const reqId = data?.id || data?.req_id;
     if (!reqId) return;
     const genId = reqToGen.get(reqId);
@@ -111,8 +120,9 @@ export async function connectRelay(opts: ConnectOptions) {
     if (genId && TH?.stopGenerateById) {
       try {
         TH.stopGenerateById(genId);
+        console.info("[SocketIO/connectRelay] '已触发停止生成'", { generation_id: genId });
       } catch (e) {
-        console.warn('stopGenerateById failed', e);
+        console.warn("[SocketIO/connectRelay] '停止生成失败'", e);
       }
     }
   });
@@ -121,9 +131,10 @@ export async function connectRelay(opts: ConnectOptions) {
 export function disconnectRelay() {
   if (currentSocket) {
     try {
+      console.info("[SocketIO/disconnectRelay] '开始断开'");
       currentSocket.disconnect();
     } catch (e) {
-      /* ignore */
+      console.error("[SocketIO/disconnectRelay] '断开失败'", e);
     }
   }
   currentSocket = null;
@@ -176,23 +187,26 @@ function toStreamChunk(params: { reqId: string; delta: string; model?: string; d
 
 async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload) {
   const socket = currentSocket;
-  if (!socket) return;
-
+  if (!socket) {
+    console.warn("[SocketIO/handleChatCompletionsCreate] '无有效 socket，忽略请求'");
+    return;
+  }
+ 
   const reqId = payload.id || uuidv4();
   const genId = payload.tavern?.generation_id || uuidv4();
   reqToGen.set(reqId, genId);
-
+ 
   const stream = payload.stream ?? currentStreamDefault ?? true;
-
+ 
   const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
-
+ 
   // 选择使用 generate 还是 generateRaw
   const useRaw =
     payload.tavern?.use_raw === true ||
     payload.method === 'generateRaw' ||
     Array.isArray(payload.tavern?.ordered_prompts);
   const method: 'generate' | 'generateRaw' = useRaw ? 'generateRaw' : 'generate';
-
+ 
   // 构建配置
   const config: any = {
     user_input,
@@ -206,16 +220,19 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   if (method === 'generateRaw') {
     config.ordered_prompts = payload.tavern?.ordered_prompts;
   }
-
+ 
   const TH: any = (window as any).TavernHelper;
   if (!TH?.[method]) {
+    console.error("[SocketIO/handleChatCompletionsCreate] 'TavernHelper 方法不可用'", { method });
     socket.emit('openai.chat.completions.error', {
       id: reqId,
       error: { message: `TavernHelper.${method} 不可用`, type: 'internal_error' },
     });
     return;
   }
-
+ 
+  console.info("[SocketIO/handleChatCompletionsCreate] '开始生成'", { reqId, genId, stream, method, model: payload.model, user_input_preview: (user_input || '').slice(0, 120) });
+ 
   // 中转前应用酒馆正则
   const regexProcess = (text: string): string => {
     try {
@@ -229,7 +246,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     }
     return text;
   };
-
+ 
   let full = '';
   const onInc = (incremental: string, id: string) => {
     if (id !== genId) return;
@@ -242,18 +259,21 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
         model: payload.model,
       });
       socket.emit('openai.chat.completions.chunk', { id: reqId, data: chunk });
+      console.debug("[SocketIO/handleChatCompletionsCreate/onInc] '增量片段'", { id, len: (incremental || '').length });
     } catch (e) {
-      console.error(e);
+      console.error("[SocketIO/handleChatCompletionsCreate/onInc] '处理增量失败'", e);
     }
   };
   const onFull = (_fullText: string, id: string) => {
     if (id !== genId) return;
+    console.info("[SocketIO/handleChatCompletionsCreate/onFull] '收到完整文本'", { id, len: (_fullText || '').length });
     // 可选：也可在此发整段快照
   };
   const onEnd = (text: string, id: string) => {
     if (id !== genId) return;
     try {
       const finalText = text ?? full;
+      console.info("[SocketIO/handleChatCompletionsCreate/onEnd] '生成结束'", { id, stream, final_len: (finalText || '').length });
       if (stream) {
         const done = toStreamChunk({
           reqId,
@@ -275,15 +295,17 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     } finally {
       cleanup();
       reqToGen.delete(reqId);
+      console.info("[SocketIO/handleChatCompletionsCreate] '清理完成并移除映射'", { reqId });
     }
   };
-
+ 
   const pmListener = (ev: MessageEvent) => {
     const data = (ev as any)?.data;
     if (!data || data.source !== 'socketio-extension') return;
     const t = data.type;
     const p = data.payload || {};
     try {
+      console.debug("[SocketIO/handleChatCompletionsCreate/pmListener] '收到桥接事件'", { type: t, id: p.id });
       if (t === 'STREAM_TOKEN_RECEIVED_INCREMENTALLY') {
         onInc(p.incremental_text, p.id);
       } else if (t === 'STREAM_TOKEN_RECEIVED_FULLY') {
@@ -292,10 +314,10 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
         onEnd(p.text, p.id);
       }
     } catch (e) {
-      console.error(e);
+      console.error("[SocketIO/handleChatCompletionsCreate/pmListener] '处理桥接事件失败'", e);
     }
   };
-
+ 
   const cleanup = () => {
     try {
       // 清理 iframe 事件监听（如可用）
@@ -312,7 +334,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
       }
     }
   };
-
+ 
   // 注册监听以获取流式 token 与结束事件（优先使用 postMessage 桥）
   try {
     window.addEventListener('message', pmListener as any);
@@ -327,17 +349,19 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   } catch (e) {
     /* ignore */
   }
-
+ 
   // 告知请求已受理
   socket.emit('openai.chat.completions.accepted', {
     id: reqId,
     generation_id: genId,
   });
-
+  console.info("[SocketIO/handleChatCompletionsCreate] '已受理请求'", { reqId, generation_id: genId });
+ 
   try {
     await TH[method](config);
   } catch (e: any) {
     cleanup();
+    console.error("[SocketIO/handleChatCompletionsCreate] '生成过程出现错误'", e);
     socket.emit('openai.chat.completions.error', {
       id: reqId,
       error: { message: e?.message || String(e), type: 'generation_error' },
