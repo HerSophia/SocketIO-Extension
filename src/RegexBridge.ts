@@ -23,11 +23,7 @@ export async function installRegexBridge(): Promise<void> {
 
     await TH.updateTavernRegexesWith(async (regexes: any[]) => {
       let existing = Array.isArray(regexes)
-        ? regexes.find(
-            (r: any) =>
-              r?.script_name === bridgeName ||
-              r?.find_regex === findRe,
-          )
+        ? regexes.find((r: any) => r?.script_name === bridgeName || r?.find_regex === findRe)
         : undefined;
 
       if (existing) {
@@ -42,8 +38,7 @@ export async function installRegexBridge(): Promise<void> {
         existing.min_depth = 0;
         existing.max_depth = null;
       } else {
-        const uuid =
-          w.SillyTavern?.uuidv4?.() || Math.random().toString(36).slice(2);
+        const uuid = w.SillyTavern?.uuidv4?.() || Math.random().toString(36).slice(2);
         regexes.push({
           id: uuid,
           script_name: bridgeName,
@@ -106,7 +101,9 @@ html,body{margin:0;padding:0;background:transparent;color:#9aa8bd;font:12px/1.4 
     '<iframe class="socketio-bridge" title="SocketIO Bridge" ' +
     'sandbox="allow-scripts allow-same-origin" ' +
     'style="display:block;max-width:100%;border:0;margin:4px 0;" ' +
-    'srcdoc="' + srcdoc.replace(/"/g, '&quot;') + '"></iframe>';
+    'srcdoc="' +
+    srcdoc.replace(/"/g, '&quot;') +
+    '"></iframe>';
 
   return iframe;
 }
