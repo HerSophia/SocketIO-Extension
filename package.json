@@ -50,11 +50,14 @@
     "yaml": "^2.8.1"
   },
   "dependencies": {
+    "@types/socket.io-client": "^3.0.0",
     "@vueuse/components": "^13.9.0",
     "@vueuse/core": "^13.9.0",
     "@vueuse/integrations": "^13.9.0",
     "@vueuse/shared": "^13.9.0",
     "pinia": "^3.0.3",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.14",
     "type-fest": "^4.41.0",
     "vue": "^3.5.22",
