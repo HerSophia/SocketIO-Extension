@@ -1,5 +1,5 @@
 {
-  "display_name": "<插件名称>",
+  "display_name": "SocketIO 中转服务",
   "loading_order": 120,
   "requires": [],
   "optional": [],
