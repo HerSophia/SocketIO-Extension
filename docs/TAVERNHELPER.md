@@ -13,6 +13,11 @@
 4. [酒馆正则](#酒馆正则)
 5. [注入提示词](#注入提示词)
 6. [角色卡信息](#角色卡信息)
+7. [楼层消息](#楼层消息)
+    - [创建消息](#创建消息)
+    - [修改消息](#修改消息)
+    - [删除消息](#删除消息)
+    - [获取消息](#获取消息)
 
 ---
 
@@ -1060,4 +1065,213 @@ for (const name of charNames) {
   allHistoryBriefs.push(...historyBrief);
 }
 const historyDetail = await getChatHistoryDetail(allHistoryBriefs);
+```
+
+---
+
+## 楼层消息
+
+### 创建消息
+
+#### createMessage
+
+创建一个新的楼层消息。
+
+```typescript
+function createMessage(
+  data: ChatMessage,
+  options?: CreateMessageOption
+): Promise<void>;
+```
+
+**ChatMessage类型定义：**
+
+```typescript
+interface ChatMessage {
+  name: string;           // 发送者名称
+  is_user: boolean;       // 是否用户发送的消息
+  is_system: boolean;     // 是否系统消息
+  send_date: string;      // 消息发送日期时间
+  mes: string;            // 消息内容
+  extra: {                // 额外信息
+    bias: string;         // 消息偏置设置
+  };
+  swipe_id: number;       // 当前选中的swipe索引
+  swipes: string[];       // 可选择的消息内容数组
+  swipe_info: any[];      // swipe相关信息
+}
+```
+
+**CreateMessageOption类型定义：**
+
+```typescript
+interface CreateMessageOption {
+  chat_file?: string; // 指定要操作的聊天文件，默认为当前聊天
+  as_stream?: boolean; // 是否以流式消息方式创建，默认为false
+}
+```
+
+**参数：**
+
+- `data`: 要创建的楼层消息对象
+- `options`: 可选选项
+
+**示例：**
+
+```typescript
+// 在当前聊天中创建一条用户消息
+await createMessage({
+  name: 'User',
+  is_user: true,
+  mes: '你好！'
+});
+
+// 在指定聊天文件中创建一条角色消息
+await createMessage(
+  {
+    name: 'Character',
+    is_user: false,
+    mes: '你好，有什么可以帮助你的吗？'
+  },
+  {
+    chat_file: 'character_chat.jsonl'
+  }
+);
+```
+
+### 修改消息
+
+#### editMessage
+
+修改一个已有的楼层消息。
+
+```typescript
+function editMessage(
+  data: DisplayedMessage,
+  options?: EditMessageOption
+): Promise<void>;
+```
+
+**DisplayedMessage类型定义：**
+
+```typescript
+interface DisplayedMessage {
+  // 包含了ChatMessage的所有字段
+  id: number; // 楼层消息的唯一ID
+  // ... 其他ChatMessage字段
+}
+```
+
+**EditMessageOption类型定义：**
+
+```typescript
+interface EditMessageOption {
+  chat_file?: string; // 指定要操作的聊天文件，默认为当前聊天
+  update_date?: boolean; // 是否更新消息的发送时间，默认为false
+}
+```
+
+**参数：**
+
+- `data`: 要修改的楼层消息对象，必须包含`id`字段
+- `options`: 可选选项
+
+**示例：**
+
+```typescript
+// 修改指定ID的楼层消息内容
+await editMessage({
+  id: 123,
+  mes: '修改后的消息内容'
+});
+
+// 修改消息并更新发送时间
+await editMessage(
+  {
+    id: 456,
+    mes: '新的内容',
+  },
+  {
+    update_date: true
+  }
+);
+```
+
+### 删除消息
+
+#### deleteMessage
+
+删除一个或多个楼层消息。
+
+```typescript
+function deleteMessage(
+  data: number | number[],
+  options?: DeleteMessageOption
+): Promise<void>;
+```
+
+**DeleteMessageOption类型定义：**
+
+```typescript
+interface DeleteMessageOption {
+  chat_file?: string; // 指定要操作的聊天文件，默认为当前聊天
+}
+```
+
+**参数：**
+
+- `data`: 要删除的楼层消息ID或ID数组
+- `options`: 可选选项
+
+**示例：**
+
+```typescript
+// 删除单个消息
+await deleteMessage(123);
+
+// 批量删除多个消息
+await deleteMessage([456, 789]);
+```
+
+### 获取消息
+
+#### getMessage
+
+获取一个或多个楼层消息。
+
+```typescript
+function getMessage(
+  data?: number | number[],
+  options?: GetMessageOption
+): Promise<DisplayedMessage[]>;
+```
+
+**GetMessageOption类型定义：**
+
+```typescript
+interface GetMessageOption {
+  chat_file?: string; // 指定要操作的聊天文件，默认为当前聊天
+}
+```
+
+**参数：**
+
+- `data`: 要获取的楼层消息ID或ID数组，如果未提供，则返回所有消息
+- `options`: 可选选项
+
+**返回值：**
+
+- `Promise<DisplayedMessage[]>`: 包含楼层消息对象的数组
+
+**示例：**
+
+```typescript
+// 获取所有消息
+const allMessages = await getMessage();
+
+// 获取单个消息
+const singleMessage = await getMessage(123);
+
+// 获取多个消息
+const multipleMessages = await getMessage([456, 789]);
 ```

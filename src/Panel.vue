@@ -89,6 +89,7 @@
 import { useSettingsStore } from '@/store/settings';
 import { storeToRefs } from 'pinia';
 import { connectRelay, disconnectRelay, onRelayStatus } from '@/SocketIO';
+import { installRegexBridge } from '@/RegexBridge';
 import { ref, watch } from 'vue';
 
 const { settings } = storeToRefs(useSettingsStore());
@@ -110,6 +111,8 @@ onRelayStatus(applyConnected);
 async function ensureConnection() {
   if (settings.value.socket_enabled) {
     try {
+      // 安装桥接正则，确保 <socket></socket> 被渲染为可监听的 iframe
+      await installRegexBridge();
       await connectRelay({
         url: settings.value.server_url,
         namespace: settings.value.namespace,

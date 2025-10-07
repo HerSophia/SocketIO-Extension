@@ -278,20 +278,55 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     }
   };
 
+  const pmListener = (ev: MessageEvent) => {
+    const data = (ev as any)?.data;
+    if (!data || data.source !== 'socketio-extension') return;
+    const t = data.type;
+    const p = data.payload || {};
+    try {
+      if (t === 'STREAM_TOKEN_RECEIVED_INCREMENTALLY') {
+        onInc(p.incremental_text, p.id);
+      } else if (t === 'STREAM_TOKEN_RECEIVED_FULLY') {
+        onFull(p.full_text, p.id);
+      } else if (t === 'GENERATION_ENDED') {
+        onEnd(p.text, p.id);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const cleanup = () => {
     try {
+      // 清理 iframe 事件监听（如可用）
       eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY, onInc as any);
       eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onFull as any);
       eventRemoveListener(iframe_events.GENERATION_ENDED, onEnd as any);
     } catch (e) {
       /* ignore */
+    } finally {
+      try {
+        window.removeEventListener('message', pmListener as any);
+      } catch (e) {
+        /* ignore */
+      }
     }
   };
 
-  // 注册监听以获取流式 token 与结束事件
-  eventOn(iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY, onInc as any);
-  eventOn(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onFull as any);
-  eventOn(iframe_events.GENERATION_ENDED, onEnd as any);
+  // 注册监听以获取流式 token 与结束事件（优先使用 postMessage 桥）
+  try {
+    window.addEventListener('message', pmListener as any);
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    // 同时尽力注册 iframe 原生事件（当运行于消息 iframe 环境时）
+    eventOn(iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY, onInc as any);
+    eventOn(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onFull as any);
+    eventOn(iframe_events.GENERATION_ENDED, onEnd as any);
+  } catch (e) {
+    /* ignore */
+  }
 
   // 告知请求已受理
   socket.emit('openai.chat.completions.accepted', {

@@ -148,11 +148,11 @@ function renderAdminPage() {
         if (done) break;
         buf += dec.decode(value, { stream: true });
         let idx;
-        while ((idx = buf.indexOf("\n\n")) >= 0) {
+        while ((idx = buf.indexOf('\\n\\n')) >= 0) {
           const chunk = buf.slice(0, idx); buf = buf.slice(idx + 2);
           if (!chunk.startsWith('data:')) continue;
           const data = chunk.slice(5).trim();
-          if (data === '[DONE]') { out.textContent += '\n[DONE]'; return; }
+          if (data === '[DONE]') { out.textContent += '\\n[DONE]'; return; }
           try {
             const j = JSON.parse(data);
             const choice = (j.choices && j.choices[0]) || {};
