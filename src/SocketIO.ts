@@ -22,6 +22,8 @@ type ChatCompletionsCreatePayload = {
   messages?: OpenAIChatMessage[];
   /** 是否流式；若未提供，使用 connectRelay 的默认设置 */
   stream?: boolean;
+  /** 指定调用 generate 还是 generateRaw；默认 generate */
+  method?: 'generate' | 'generateRaw';
   /** Tavern 专属字段（可选） */
   tavern?: {
     overrides?: any;
@@ -32,6 +34,10 @@ type ChatCompletionsCreatePayload = {
     generation_id?: string;
     /** 直接指定 user_input（覆盖 messages 推断） */
     user_input?: string;
+    /** generateRaw 专属：自定义提示词顺序 */
+    ordered_prompts?: any[];
+    /** 便捷开关：等价于 method === 'generateRaw' */
+    use_raw?: boolean;
   };
   /** 便捷字段：直接指定 user_input */
   user_input?: string;
@@ -70,7 +76,7 @@ export async function connectRelay(opts: ConnectOptions) {
   if (currentSocket) {
     try {
       currentSocket.disconnect();
-    } catch {}
+    } catch (e) { /* ignore */ }
     currentSocket = null;
   }
   const s = io(url, {
@@ -114,7 +120,7 @@ export function disconnectRelay() {
   if (currentSocket) {
     try {
       currentSocket.disconnect();
-    } catch {}
+    } catch (e) { /* ignore */ }
   }
   currentSocket = null;
   notifyStatus(false);
@@ -174,8 +180,19 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const stream = payload.stream ?? currentStreamDefault ?? true;
 
-  const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
+  const user_input =
+    payload.user_input ??
+    payload.tavern?.user_input ??
+    lastUserInputFromMessages(payload.messages);
 
+  // 选择使用 generate 还是 generateRaw
+  const useRaw =
+    payload.tavern?.use_raw === true ||
+    payload.method === 'generateRaw' ||
+    Array.isArray(payload.tavern?.ordered_prompts);
+  const method: 'generate' | 'generateRaw' = useRaw ? 'generateRaw' : 'generate';
+
+  // 构建配置
   const config: any = {
     user_input,
     should_stream: stream,
@@ -185,22 +202,44 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     custom_api: payload.tavern?.custom_api,
     generation_id: genId,
   };
+  if (method === 'generateRaw') {
+    config.ordered_prompts = payload.tavern?.ordered_prompts;
+  }
 
   const TH: any = (window as any).TavernHelper;
-  if (!TH?.generate) {
+  if (!TH?.[method]) {
     socket.emit('openai.chat.completions.error', {
       id: reqId,
-      error: { message: 'TavernHelper.generate 不可用', type: 'internal_error' },
+      error: { message: `TavernHelper.${method} 不可用`, type: 'internal_error' },
     });
     return;
   }
+
+  // 中转前应用酒馆正则
+  const regexProcess = (text: string): string => {
+    try {
+      const w: any = window as any;
+      const fn =
+        w.formatAsTavernRegexedString ||
+        w.TavernHelper?.formatAsTavernRegexedString;
+      if (typeof fn === 'function') {
+        return fn(text, 'ai_output', 'display');
+      }
+    } catch (e) { /* ignore */ }
+    return text;
+  };
 
   let full = '';
   const onInc = (incremental: string, id: string) => {
     if (id !== genId) return;
     try {
       full += incremental || '';
-      const chunk = toStreamChunk({ reqId, delta: incremental || '', model: payload.model });
+      const processed = regexProcess(incremental || '');
+      const chunk = toStreamChunk({
+        reqId,
+        delta: processed,
+        model: payload.model,
+      });
       socket.emit('openai.chat.completions.chunk', { id: reqId, data: chunk });
     } catch (e) {
       console.error(e);
@@ -215,11 +254,21 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     try {
       const finalText = text ?? full;
       if (stream) {
-        const done = toStreamChunk({ reqId, delta: '', model: payload.model, done: true });
+        const done = toStreamChunk({
+          reqId,
+          delta: '',
+          model: payload.model,
+          done: true,
+        });
         socket.emit('openai.chat.completions.chunk', { id: reqId, data: done });
         socket.emit('openai.chat.completions.done', { id: reqId });
       } else {
-        const resp = toNonStreamResponse({ reqId, model: payload.model, content: finalText });
+        const processedFinal = regexProcess(finalText);
+        const resp = toNonStreamResponse({
+          reqId,
+          model: payload.model,
+          content: processedFinal,
+        });
         socket.emit('openai.chat.completions.result', { id: reqId, data: resp });
       }
     } finally {
@@ -230,10 +279,16 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const cleanup = () => {
     try {
-      eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY, onInc as any);
-      eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onFull as any);
+      eventRemoveListener(
+        iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY,
+        onInc as any,
+      );
+      eventRemoveListener(
+        iframe_events.STREAM_TOKEN_RECEIVED_FULLY,
+        onFull as any,
+      );
       eventRemoveListener(iframe_events.GENERATION_ENDED, onEnd as any);
-    } catch {}
+    } catch (e) { /* ignore */ }
   };
 
   // 注册监听以获取流式 token 与结束事件
@@ -242,10 +297,13 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   eventOn(iframe_events.GENERATION_ENDED, onEnd as any);
 
   // 告知请求已受理
-  socket.emit('openai.chat.completions.accepted', { id: reqId, generation_id: genId });
+  socket.emit('openai.chat.completions.accepted', {
+    id: reqId,
+    generation_id: genId,
+  });
 
   try {
-    await TH.generate(config);
+    await TH[method](config);
   } catch (e: any) {
     cleanup();
     socket.emit('openai.chat.completions.error', {
