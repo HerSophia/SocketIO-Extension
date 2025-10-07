@@ -76,7 +76,9 @@ export async function connectRelay(opts: ConnectOptions) {
   if (currentSocket) {
     try {
       currentSocket.disconnect();
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
     currentSocket = null;
   }
   const s = io(url, {
@@ -120,7 +122,9 @@ export function disconnectRelay() {
   if (currentSocket) {
     try {
       currentSocket.disconnect();
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
   }
   currentSocket = null;
   notifyStatus(false);
@@ -180,10 +184,7 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const stream = payload.stream ?? currentStreamDefault ?? true;
 
-  const user_input =
-    payload.user_input ??
-    payload.tavern?.user_input ??
-    lastUserInputFromMessages(payload.messages);
+  const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
 
   // 选择使用 generate 还是 generateRaw
   const useRaw =
@@ -219,13 +220,13 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
   const regexProcess = (text: string): string => {
     try {
       const w: any = window as any;
-      const fn =
-        w.formatAsTavernRegexedString ||
-        w.TavernHelper?.formatAsTavernRegexedString;
+      const fn = w.formatAsTavernRegexedString || w.TavernHelper?.formatAsTavernRegexedString;
       if (typeof fn === 'function') {
         return fn(text, 'ai_output', 'display');
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
     return text;
   };
 
@@ -279,16 +280,12 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const cleanup = () => {
     try {
-      eventRemoveListener(
-        iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY,
-        onInc as any,
-      );
-      eventRemoveListener(
-        iframe_events.STREAM_TOKEN_RECEIVED_FULLY,
-        onFull as any,
-      );
+      eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_INCREMENTALLY, onInc as any);
+      eventRemoveListener(iframe_events.STREAM_TOKEN_RECEIVED_FULLY, onFull as any);
       eventRemoveListener(iframe_events.GENERATION_ENDED, onEnd as any);
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* ignore */
+    }
   };
 
   // 注册监听以获取流式 token 与结束事件
