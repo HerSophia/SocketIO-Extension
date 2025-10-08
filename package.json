@@ -1,13 +1,21 @@
 {
+<<<<<<< HEAD
   "name": "SocketIO 中转服务",
+=======
+  "name": "<插件名称>",
+>>>>>>> f51dc0026eb0eedd596175bbe6a7c811a02ace75
   "version": "1.0.0",
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch --mode development",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html,vue}\"",
     "lint": "eslint",
+<<<<<<< HEAD
     "lint:fix": "eslint --fix",
     "server:dev": "node --loader ts-node/esm server/index.ts"
+=======
+    "lint:fix": "eslint --fix"
+>>>>>>> f51dc0026eb0eedd596175bbe6a7c811a02ace75
   },
   "browserslist": [
     "defaults and partially supports es6-module"
@@ -51,14 +59,20 @@
     "yaml": "^2.8.1"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@types/socket.io-client": "^3.0.0",
+=======
+>>>>>>> f51dc0026eb0eedd596175bbe6a7c811a02ace75
     "@vueuse/components": "^13.9.0",
     "@vueuse/core": "^13.9.0",
     "@vueuse/integrations": "^13.9.0",
     "@vueuse/shared": "^13.9.0",
     "pinia": "^3.0.3",
+<<<<<<< HEAD
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+=======
+>>>>>>> f51dc0026eb0eedd596175bbe6a7c811a02ace75
     "tailwindcss": "^4.1.14",
     "type-fest": "^4.41.0",
     "vue": "^3.5.22",
