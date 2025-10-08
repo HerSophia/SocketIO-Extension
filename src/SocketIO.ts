@@ -6,6 +6,7 @@ type ConnectOptions = {
   namespace?: string;
   token?: string;
   stream?: boolean;
+  methodDefault?: 'generate' | 'generateRaw';
 };
 
 type OpenAIChatMessage = {
@@ -46,6 +47,7 @@ type ChatCompletionsCreatePayload = {
 const reqToGen = new Map<string, string>();
 let currentSocket: Socket | null = null;
 let currentStreamDefault = true;
+let currentMethodDefault: 'generate' | 'generateRaw' = 'generate';
 let _connected = false;
 const statusWatchers: ((s: boolean) => void)[] = [];
 
@@ -79,13 +81,10 @@ export async function connectRelay(opts: ConnectOptions) {
   if (hadStreamOpt) {
     currentStreamDefault = opts.stream === true;
   }
-  console.info("[SocketIO/connectRelay] '准备连接'", {
-    url,
-    namespace: ns,
-    tokenPresent: !!opts.token,
-    streamDefault: currentStreamDefault,
-    streamOverride: hadStreamOpt,
-  });
+  if (opts.methodDefault) {
+    currentMethodDefault = opts.methodDefault;
+  }
+  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault, streamOverride: hadStreamOpt, methodDefault: currentMethodDefault });
   if (currentSocket) {
     try {
       console.info("[SocketIO/connectRelay] '断开旧连接'");
@@ -108,6 +107,11 @@ export async function connectRelay(opts: ConnectOptions) {
   s.on('connect', () => {
     console.info("[SocketIO/connectRelay] '已连接'");
     notifyStatus(true);
+    try {
+      void pushRegexesToServer();
+    } catch (e) {
+      /* ignore */
+    }
   });
   s.on('disconnect', reason => {
     console.warn("[SocketIO/connectRelay] '已断开'", { reason });
@@ -149,6 +153,22 @@ export function disconnectRelay() {
   }
   currentSocket = null;
   notifyStatus(false);
+}
+
+export async function pushRegexesToServer() {
+  const socket = currentSocket;
+  if (!socket) return;
+  try {
+    const w: any = window as any;
+    const TH = w.TavernHelper;
+    if (TH?.getTavernRegexes) {
+      const regexes = TH.getTavernRegexes({ scope: 'all', enable_state: 'enabled' });
+      socket.emit('tavern.regexes.update', Array.isArray(regexes) ? regexes : []);
+      console.info("[SocketIO/pushRegexesToServer] '已推送正则规则'", { count: (regexes || []).length });
+    }
+  } catch (e) {
+    console.warn("[SocketIO/pushRegexesToServer] '推送失败'", e);
+  }
 }
 
 function lastUserInputFromMessages(messages?: OpenAIChatMessage[]): string {
@@ -210,12 +230,12 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
 
   const user_input = payload.user_input ?? payload.tavern?.user_input ?? lastUserInputFromMessages(payload.messages);
 
-  // 选择使用 generate 还是 generateRaw
-  const useRaw =
-    payload.tavern?.use_raw === true ||
-    payload.method === 'generateRaw' ||
-    Array.isArray(payload.tavern?.ordered_prompts);
-  const method: 'generate' | 'generateRaw' = useRaw ? 'generateRaw' : 'generate';
+  // 选择使用 generate 还是 generateRaw（优先级：payload.method > tavern.use_raw/ordered_prompts > 全局默认）
+  const method: 'generate' | 'generateRaw' = (() => {
+    if (payload.method === 'generate' || payload.method === 'generateRaw') return payload.method;
+    if (payload.tavern?.use_raw === true || Array.isArray(payload.tavern?.ordered_prompts)) return 'generateRaw';
+    return currentMethodDefault;
+  })();
 
   // 构建配置
   const config: any = {
@@ -250,29 +270,15 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     user_input_preview: (user_input || '').slice(0, 120),
   });
 
-  // 中转前应用酒馆正则
-  const regexProcess = (text: string): string => {
-    try {
-      const w: any = window as any;
-      const fn = w.formatAsTavernRegexedString || w.TavernHelper?.formatAsTavernRegexedString;
-      if (typeof fn === 'function') {
-        return fn(text, 'ai_output', 'display');
-      }
-    } catch (e) {
-      /* ignore */
-    }
-    return text;
-  };
 
   let full = '';
   const onInc = (incremental: string, id: string) => {
     if (id !== genId) return;
     try {
       full += incremental || '';
-      const processed = regexProcess(incremental || '');
       const chunk = toStreamChunk({
         reqId,
-        delta: processed,
+        delta: incremental || '',
         model: payload.model,
       });
       socket.emit('openai.chat.completions.chunk', { id: reqId, data: chunk });
@@ -305,11 +311,10 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
         socket.emit('openai.chat.completions.chunk', { id: reqId, data: done });
         socket.emit('openai.chat.completions.done', { id: reqId });
       } else {
-        const processedFinal = regexProcess(finalText);
         const resp = toNonStreamResponse({
           reqId,
           model: payload.model,
-          content: processedFinal,
+          content: finalText,
         });
         socket.emit('openai.chat.completions.result', { id: reqId, data: resp });
       }

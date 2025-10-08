@@ -11,6 +11,8 @@ export const Settings = z
     auth_token: z.string().default(''),
     /** 是否使用流式响应（OpenAI SSE 兼容） */
     use_stream: z.boolean().default(true),
+    /** 生成方法，默认为 generate，可选 generate | generateRaw */
+    default_method: z.enum(['generate', 'generateRaw']).default('generate'),
   })
   .prefault({});
 

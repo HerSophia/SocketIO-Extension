@@ -4,11 +4,20 @@ import http from 'http';
 import { Server as IOServer } from 'socket.io';
 import { randomUUID } from 'crypto';
 import url from 'url';
+import createDebug from 'debug';
 
 let PORT = parseInt(process.env.PORT || '3001', 10);
 let NAMESPACE = process.env.NAMESPACE || '/st';
 let AUTH_TOKEN = process.env.AUTH_TOKEN || '';
 let REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS || '120000', 10);
+
+// debug namespaces
+const DEBUG_NS = 'socketio-relay';
+const log = createDebug(`${DEBUG_NS}:server`);
+const logHttp = createDebug(`${DEBUG_NS}:http`);
+const logIO = createDebug(`${DEBUG_NS}:io`);
+const logChat = createDebug(`${DEBUG_NS}:chat`);
+const logErr = createDebug(`${DEBUG_NS}:error`);
 
 type AnyObj = any;
 
@@ -174,6 +183,7 @@ function renderAdminPage() {
 }
 
 const server = http.createServer(async (req, res) => {
+  logHttp('req %s %s', req.method, req.url);
   const parsed = url.parse(req.url || '', true);
   // CORS preflight
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -187,6 +197,7 @@ const server = http.createServer(async (req, res) => {
       res.end(renderAdminPage()); return;
     }
     if (req.method === 'GET' && parsed.pathname === '/api/status') {
+      logHttp('status: port=%d ns=%s clients=%d', PORT, NAMESPACE, clients.length);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ port: PORT, namespace: NAMESPACE, clients: clients.length, auth_token: AUTH_TOKEN, request_timeout_ms: REQUEST_TIMEOUT_MS })); return;
     }
@@ -200,6 +211,7 @@ const server = http.createServer(async (req, res) => {
       if (nsNew !== NAMESPACE) { changedNs = true; NAMESPACE = nsNew; rebindNamespace(NAMESPACE); }
       AUTH_TOKEN = tokenNew;
       REQUEST_TIMEOUT_MS = toNew;
+      logHttp('config updated: ns=%s changed=%s timeout=%d auth=%s', NAMESPACE, String(changedNs), REQUEST_TIMEOUT_MS, AUTH_TOKEN ? '***' : '(empty)');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, namespace: NAMESPACE, auth_token: AUTH_TOKEN, request_timeout_ms: REQUEST_TIMEOUT_MS, changed_namespace: changedNs })); return;
     }
@@ -214,6 +226,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: { message: 'not found' } }));
   } catch (e: any) {
+    logErr('unhandled %s %s error: %s', req.method, req.url, e?.message || String(e));
     res.writeHead(500, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: { message: e?.message || String(e) } }));
   }
@@ -227,31 +240,53 @@ let rrIndex = 0;
 
 function connectionHandler(socket: AnyObj) {
   const token = (socket.handshake.auth && socket.handshake.auth.token) || '';
-  if (AUTH_TOKEN && token !== AUTH_TOKEN) { socket.disconnect(true); return; }
+  if (AUTH_TOKEN && token !== AUTH_TOKEN) {
+    logIO('reject %s: bad token', (socket && socket.id) || 'unknown');
+    socket.disconnect(true);
+    return;
+  }
   clients.push(socket);
+  logIO('connected %s, total=%d', (socket && socket.id) || 'unknown', clients.length);
+  // 接收来自 Tavern 客户端推送的正则规则
+  try {
+    socket.on('tavern.regexes.update', (arr: any[]) => {
+      try {
+        // 仅存储启用的规则，减少处理量
+        const list = Array.isArray(arr) ? arr.filter((r: any) => r && r.enabled) : [];
+        (socket as any).data = (socket as any).data || {};
+        (socket as any).data.regexes = list;
+        logIO('regexes updated from %s count=%d', (socket && socket.id) || 'unknown', list.length);
+      } catch (e: any) {
+        logErr('regexes.update error: %s', e?.message || String(e));
+      }
+    });
+  } catch (e) { /* ignore */ }
   socket.on('disconnect', () => {
     const idx = clients.indexOf(socket);
-   if (idx >= 0) clients.splice(idx, 1);
+    if (idx >= 0) clients.splice(idx, 1);
+    logIO('disconnected %s, total=%d', (socket && socket.id) || 'unknown', clients.length);
   });
 }
 
 ns.on('connection', connectionHandler);
 
 function rebindNamespace(newNsPath: string) {
-  try { ns.removeAllListeners('connection'); } catch {}
+  try { ns.removeAllListeners('connection'); } catch (e) { /* ignore */ }
   try {
     // Reset client pool
     clients.splice(0, clients.length);
     rrIndex = 0;
-  } catch {}
+  } catch (e) { /* ignore */ }
   ns = io.of(newNsPath);
   ns.on('connection', connectionHandler);
   console.log(`[socketio-relay] namespace switched to ${newNsPath}`);
+  logIO('namespace switched to %s', newNsPath);
 }
 
 function pickClient(): AnyObj | null {
-  if (clients.length === 0) return null;
+  if (clients.length === 0) { logErr('pickClient: no clients'); return null; }
   const client = clients[rrIndex % clients.length];
+  logIO('pickClient rr=%d size=%d id=%s', rrIndex, clients.length, client && client.id);
   rrIndex = (rrIndex + 1) % (clients.length || 1);
   return client;
 }
@@ -285,30 +320,56 @@ function toOpenAIError(message: string, type = 'server_error') {
 }
 
 function mapBodyToTavernPayload(body: any, reqId: string): any {
+  const { tavern = {}, id: _ignored, ...rest } = body || {};
+  // rest 包含 OpenAI Chat Completions 的所有原始字段（如 temperature、top_p、max_tokens、response_format、seed、stop、n 等）
   const payload: any = {
     id: reqId,
-    model: body.model,
-    messages: body.messages,
-    stream: body.stream,
-    method: body.method,
-    user_input: body.user_input,
-    tavern: body.tavern || {},
+    ...rest,
+    tavern,
   };
   return payload;
 }
 
+function applyRegexes(text: string, regexes: AnyObj[]): string {
+  try {
+    if (!Array.isArray(regexes)) return text;
+    let out = String(text ?? '');
+    for (const r of regexes) {
+      try {
+        if (!r?.enabled) continue;
+        if (!r?.source?.ai_output) continue;
+        if (!r?.destination?.display) continue;
+        const pat = String(r.find_regex || '');
+        const rep = String(r.replace_string ?? '');
+        if (!pat) continue;
+        const re = new RegExp(pat, 'gms');
+        out = out.replace(re, rep);
+      } catch (e) { /* ignore one rule */ }
+    }
+    return out;
+  } catch {
+    return text;
+  }
+}
 function awaitOnce(socket: AnyObj, event: string, handler: (p: any)=>void) {
-  const fn = (p: any) => { try { handler(p); } catch {} };
+  const fn = (p: any) => { try { handler(p); } catch (e) { /* ignore */ } };
   socket.on(event, fn);
   return () => socket.off(event, fn);
 }
 
 async function handleChatCompletions(req: http.IncomingMessage, res: http.ServerResponse) {
   const client = pickClient();
-  if (!client) { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(toOpenAIError('no tavern client connected', 'unavailable'))); return; }
+  if (!client) { logErr('no tavern client connected'); res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(toOpenAIError('no tavern client connected', 'unavailable'))); return; }
   const body = await readJson(req);
+  if (!Array.isArray(body?.messages) || typeof body.model !== 'string' || !body.model) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(toOpenAIError('model (string) and messages (array) are required', 'bad_request')));
+    return;
+  }
   const reqId = body.id || randomUUID();
   const stream = body.stream === true;
+  const msgCount = Array.isArray(body?.messages) ? body.messages.length : 0;
+  logChat('create id=%s model=%s stream=%s messages=%d', reqId, body?.model, String(stream), msgCount);
   const payload = mapBodyToTavernPayload(body, reqId);
 
   const cleanupFns: Array<() => void> = [];
@@ -317,8 +378,17 @@ async function handleChatCompletions(req: http.IncomingMessage, res: http.Server
     if (finished) return;
     finished = true;
     cleanupFns.forEach(fn => fn());
-    res.writeHead(504, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(toOpenAIError('request timeout', 'timeout')));
+    try {
+      logErr('timeout id=%s', reqId);
+      if (stream) {
+        // SSE 超时通过流返回错误并结束
+        sseData(res, toOpenAIError('request timeout', 'timeout'));
+        sseDone(res);
+      } else {
+        res.writeHead(504, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(toOpenAIError('request timeout', 'timeout')));
+      }
+    } catch (e) { /* ignore */ }
   }, REQUEST_TIMEOUT_MS);
 
   const cleanupAll = () => {
@@ -330,32 +400,70 @@ async function handleChatCompletions(req: http.IncomingMessage, res: http.Server
 
   if (stream) {
     sseStart(res);
+    let acc = '';
     cleanupFns.push(awaitOnce(client, 'openai.chat.completions.chunk', (p) => {
       if (!p || p.id !== reqId) return;
-      try { sseData(res, p.data); } catch {}
+      try {
+        const delta = ((((p || {}).data || {}).choices || [])[0] || {}).delta?.content || '';
+        if (typeof delta === 'string' && delta) {
+          acc += delta;
+        }
+      } catch (e) { /* ignore */ }
     }));
     cleanupFns.push(awaitOnce(client, 'openai.chat.completions.done', (p) => {
       if (!p || p.id !== reqId) return;
-      try { sseDone(res); } finally { cleanupAll(); }
+      try {
+        const processed = applyRegexes(acc, ((client as any) && (client as any).data && (client as any).data.regexes) || []);
+        const now = Math.floor(Date.now() / 1000);
+        const chunk1 = {
+          id: `chatcmpl_${reqId}`,
+          object: 'chat.completion.chunk',
+          created: now,
+          model: body?.model || 'sillytavern',
+          choices: [{ index: 0, delta: { content: processed }, finish_reason: null }],
+        };
+        sseData(res, chunk1);
+        const chunkDone = {
+          id: `chatcmpl_${reqId}`,
+          object: 'chat.completion.chunk',
+          created: now,
+          model: body?.model || 'sillytavern',
+          choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+        };
+        sseData(res, chunkDone);
+        sseDone(res);
+      } finally { cleanupAll(); }
     }));
     cleanupFns.push(awaitOnce(client, 'openai.chat.completions.error', (p) => {
       if (!p || p.id !== reqId) return;
       try {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(toOpenAIError(p?.error?.message || 'generation error', p?.error?.type || 'generation_error')));
+        // 流式错误通过 SSE 返回
+        logErr('stream error id=%s msg=%s', reqId, (p && p.error && p.error.message) || '');
+        sseData(res, toOpenAIError(p?.error?.message || 'generation error', p?.error?.type || 'generation_error'));
+        sseDone(res);
       } finally { cleanupAll(); }
     }));
   } else {
     cleanupFns.push(awaitOnce(client, 'openai.chat.completions.result', (p) => {
       if (!p || p.id !== reqId) return;
       try {
+        logChat('result id=%s', reqId);
+        const data = p.data || {};
+        try {
+          const msg = ((((data || {}).choices || [])[0] || {}).message) || {};
+          if (typeof msg.content === 'string') {
+            const list = ((client as any) && (client as any).data && (client as any).data.regexes) || [];
+            msg.content = applyRegexes(msg.content, list);
+          }
+        } catch (e) { /* ignore */ }
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(p.data));
+        res.end(JSON.stringify(data));
       } finally { cleanupAll(); }
     }));
     cleanupFns.push(awaitOnce(client, 'openai.chat.completions.error', (p) => {
       if (!p || p.id !== reqId) return;
       try {
+        logErr('error id=%s msg=%s', reqId, (p && p.error && p.error.message) || '');
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(toOpenAIError(p?.error?.message || 'generation error', p?.error?.type || 'generation_error')));
       } finally { cleanupAll(); }
@@ -375,10 +483,12 @@ async function handleAbort(req: http.IncomingMessage, res: http.ServerResponse) 
   const body = await readJson(req);
   const reqId = body.id || body.req_id;
   if (!reqId) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(toOpenAIError('id/req_id is required', 'bad_request'))); return; }
+  logChat('abort id=%s', reqId);
   client.emit('openai.abort', { id: reqId, req_id: reqId });
   res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true }));
 }
 
 server.listen(PORT, () => {
   console.log(`[socketio-relay] listening on :${PORT}, namespace=${NAMESPACE}, clients=${clients.length}`);
+  log('listening on :%d, namespace=%s, clients=%d', PORT, NAMESPACE, clients.length);
 });

@@ -64,6 +64,20 @@
           {{ t`勾选后，结果将以流的方式分段推送（delta 片段），与 OpenAI SSE 行为一致；关闭则一次性返回完整结果。` }}
         </p>
 
+        <div class="sx-grid">
+          <label class="sx-col-label">{{ t`生成方法` }}</label>
+          <select v-model="settings.default_method" class="sx-input">
+            <option value="generate">generate</option>
+            <option value="generateRaw">generateRaw</option>
+          </select>
+          <button type="button" class="sx-col-full sx-link-btn" @click="tipMethod = !tipMethod" aria-label="这是什么">
+            Tips
+          </button>
+        </div>
+        <p v-if="tipMethod" class="sx-hint">
+          {{ t`用于选择调用 TavernHelper 的生成方法。generate 使用当前预设，generateRaw 使用自定义 ordered_prompts。` }}
+        </p>
+
         <div class="sx-row sx-justify-between">
           <span>
             {{ t`状态` }}:
@@ -88,7 +102,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/store/settings';
 import { storeToRefs } from 'pinia';
-import { connectRelay, disconnectRelay, onRelayStatus } from '@/SocketIO';
+import { connectRelay, disconnectRelay, onRelayStatus, pushRegexesToServer } from '@/SocketIO';
 import { installRegexBridge } from '@/RegexBridge';
 import { ref, watch } from 'vue';
 
@@ -101,6 +115,7 @@ const tipServer = ref(false);
 const tipNS = ref(false);
 const tipToken = ref(false);
 const tipStream = ref(false);
+const tipMethod = ref(false);
 
 function applyConnected(val: boolean) {
   console.info("[Panel.vue/applyConnected] '更新连接状态'", { value: val });
@@ -130,7 +145,10 @@ async function ensureConnection() {
         namespace: settings.value.namespace,
         token: settings.value.auth_token,
         stream: settings.value.use_stream,
+        methodDefault: settings.value.default_method as any,
       });
+      console.info("[Panel.vue/ensureConnection] '推送服务器正则规则'");
+      await pushRegexesToServer();
       console.info("[Panel.vue/ensureConnection] '连接成功'");
       toastr.success('SocketIO 已连接');
     } catch (e) {
@@ -146,13 +164,15 @@ async function ensureConnection() {
 }
 
 watch(
-  () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token],
+  () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token, settings.value.use_stream, settings.value.default_method],
   vals => {
     console.info("[Panel.vue/watch] '设置变更触发重联检查'", {
       socket_enabled: settings.value.socket_enabled,
       server_url: settings.value.server_url,
       namespace: settings.value.namespace,
       auth_token_present: !!settings.value.auth_token,
+      stream: settings.value.use_stream,
+      default_method: settings.value.default_method,
     });
     ensureConnection();
   },
