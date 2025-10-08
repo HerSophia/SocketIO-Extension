@@ -164,7 +164,14 @@ async function ensureConnection() {
 }
 
 watch(
-  () => [settings.value.socket_enabled, settings.value.server_url, settings.value.namespace, settings.value.auth_token, settings.value.use_stream, settings.value.default_method],
+  () => [
+    settings.value.socket_enabled,
+    settings.value.server_url,
+    settings.value.namespace,
+    settings.value.auth_token,
+    settings.value.use_stream,
+    settings.value.default_method,
+  ],
   vals => {
     console.info("[Panel.vue/watch] '设置变更触发重联检查'", {
       socket_enabled: settings.value.socket_enabled,

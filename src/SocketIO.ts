@@ -84,7 +84,14 @@ export async function connectRelay(opts: ConnectOptions) {
   if (opts.methodDefault) {
     currentMethodDefault = opts.methodDefault;
   }
-  console.info("[SocketIO/connectRelay] '准备连接'", { url, namespace: ns, tokenPresent: !!opts.token, streamDefault: currentStreamDefault, streamOverride: hadStreamOpt, methodDefault: currentMethodDefault });
+  console.info("[SocketIO/connectRelay] '准备连接'", {
+    url,
+    namespace: ns,
+    tokenPresent: !!opts.token,
+    streamDefault: currentStreamDefault,
+    streamOverride: hadStreamOpt,
+    methodDefault: currentMethodDefault,
+  });
   if (currentSocket) {
     try {
       console.info("[SocketIO/connectRelay] '断开旧连接'");
@@ -269,7 +276,6 @@ async function handleChatCompletionsCreate(payload: ChatCompletionsCreatePayload
     model: payload.model,
     user_input_preview: (user_input || '').slice(0, 120),
   });
-
 
   let full = '';
   const onInc = (incremental: string, id: string) => {
