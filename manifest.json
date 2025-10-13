@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "display_name": "SocketIO 中转服务",
+=======
+  "display_name": "<插件名称>",
+>>>>>>> 65f9deffaa2f155930a99ad579f71756a2051565
   "loading_order": 120,
   "requires": [],
   "optional": [],
