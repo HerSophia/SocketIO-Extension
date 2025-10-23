@@ -1,13 +1,21 @@
 {
+<<<<<<< HEAD
   "name": "SocketIO 中转服务",
+=======
+  "name": "<插件名称>",
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
   "version": "1.0.0",
   "scripts": {
     "build": "vite build",
     "watch": "vite build --watch --mode development",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,css,scss,html,vue}\"",
     "lint": "eslint",
+<<<<<<< HEAD
     "lint:fix": "eslint --fix",
     "server:dev": "node --loader ts-node/esm server/index.ts"
+=======
+    "lint:fix": "eslint --fix"
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
   },
   "browserslist": [
     "defaults and partially supports es6-module"
@@ -16,7 +24,10 @@
     "@eslint/js": "^9.38.0",
     "@popperjs/core": "^2.11.8",
     "@tailwindcss/postcss": "^4.1.15",
+<<<<<<< HEAD
     "@types/debug": "^4.1.12",
+=======
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
     "@types/jquery": "^3.5.33",
     "@types/jqueryui": "^1.12.24",
     "@types/lodash": "^4.17.20",
@@ -35,6 +46,10 @@
     "eslint-plugin-vue": "^10.5.1",
     "globals": "^16.4.0",
     "highlight.js": "^11.11.1",
+<<<<<<< HEAD
+=======
+    "postcss-load-config": "^6.0.1",
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
     "postcss-loader": "^8.2.0",
     "postcss-minify": "^1.2.0",
     "prettier": "^3.6.2",
@@ -52,11 +67,15 @@
     "yaml": "^2.8.1"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@types/socket.io-client": "^3.0.0",
+=======
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
     "@vueuse/components": "^13.9.0",
     "@vueuse/core": "^13.9.0",
     "@vueuse/integrations": "^13.9.0",
     "@vueuse/shared": "^13.9.0",
+<<<<<<< HEAD
     "debug": "^4.4.3",
     "pinia": "^3.0.3",
     "socket.io": "^4.8.1",
@@ -64,6 +83,14 @@
     "tailwindcss": "^4.1.15",
     "type-fest": "^4.41.0",
     "vue": "^3.5.22",
+=======
+    "klona": "^2.0.6",
+    "pinia": "^3.0.3",
+    "tailwindcss": "^4.1.15",
+    "type-fest": "^4.41.0",
+    "vue": "^3.5.22",
+    "vue-final-modal": "^4.5.5",
+>>>>>>> 1182e312dc7f161f73325e0744a820ac6d8bc358
     "zod": "^4.1.12"
   }
 }
