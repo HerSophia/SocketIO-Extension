@@ -9,7 +9,11 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(
     settings,
     new_settings => {
+<<<<<<< HEAD
       _.set(extension_settings, setting_field, toRaw(new_settings)); // 用 toRaw 去除 proxy 层
+=======
+      _.set(extension_settings, setting_field, klona(new_settings)); // 用 klona 克隆对象从而去除 proxy 层
+>>>>>>> 6d662d8a900facc0f9ced8afc9e9072a4daa2263
       saveSettingsDebounced();
     },
     { deep: true },
