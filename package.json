@@ -13,9 +13,9 @@
     "defaults and partially supports es6-module"
   ],
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^9.39.2",
     "@popperjs/core": "^2.11.8",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/debug": "^4.1.12",
     "@types/jquery": "^3.5.33",
     "@types/jqueryui": "^1.12.24",
@@ -23,10 +23,10 @@
     "@types/mark.js": "^8.11.12",
     "@types/toastr": "^2.1.43",
     "@typescript-eslint/parser": "^8.49.0",
-    "@vitejs/plugin-vue": "^6.0.2",
+    "@vitejs/plugin-vue": "^6.0.3",
     "autoprefixer": "^10.4.22",
     "css-loader": "^7.1.2",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-better-tailwindcss": "^3.8.0",
@@ -61,7 +61,7 @@
     "pinia": "^3.0.4",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "tailwindcss": "^4.1.17",
+    "tailwindcss": "^4.1.18",
     "type-fest": "^4.41.0",
     "vue": "^3.5.25",
     "zod": "^4.1.13"
