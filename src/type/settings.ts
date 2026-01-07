@@ -1,6 +1,7 @@
 export type Settings = z.infer<typeof Settings>;
 export const Settings = z
   .object({
+<<<<<<< HEAD
     /** 是否启用 SocketIO 中转 */
     socket_enabled: z.boolean().default(false),
     /** 服务器 URL，如 http://localhost:3001 */
@@ -17,3 +18,10 @@ export const Settings = z
   .prefault({});
 
 export const setting_field = 'socketio_extension';
+=======
+    button_selected: z.boolean().default(false),
+  })
+  .prefault({});
+
+export const setting_field = 'tavern_extension_example';
+>>>>>>> f9c6fd924ca61b1c84c43c7ad62b9c7d0a48dac1
