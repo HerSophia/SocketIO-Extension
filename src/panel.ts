@@ -19,6 +19,7 @@ const i18n = {
 app.use(i18n);
 
 export function initPanel() {
+<<<<<<< HEAD
   console.info("[panel.ts/initPanel] '初始化面板挂载点'");
   const $app = $('<div id="tavern_extension_example">').appendTo('#extensions_settings2');
   console.info("[panel.ts/initPanel] '开始挂载'", {
@@ -27,4 +28,8 @@ export function initPanel() {
   });
   app.mount($app[0]);
   console.info("[panel.ts/initPanel] '挂载完成'");
+=======
+  const $app = $('<div id="tavern_extension_example">').appendTo('#extensions_settings2');
+  app.mount($app[0]);
+>>>>>>> f7ea114b0f46b0ec8c59ccc32ca8a5e1784139d9
 }
