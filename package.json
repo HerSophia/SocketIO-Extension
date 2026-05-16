@@ -23,7 +23,7 @@
     "@types/mark.js": "^8.11.12",
     "@types/toastr": "^2.1.43",
     "@typescript-eslint/parser": "^8.59.3",
-    "@vitejs/plugin-vue": "^6.0.6",
+    "@vitejs/plugin-vue": "^6.0.7",
     "autoprefixer": "^10.5.0",
     "css-loader": "^7.1.4",
     "eslint": "^9.39.4",
