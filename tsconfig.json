@@ -8,10 +8,15 @@
       "jquery",
       "jqueryui",
       "lodash",
+<<<<<<< HEAD
       "toastr",    ],
     "typeRoots": [
       "./@types",
       "./node_modules/@types"
+=======
+      "toastr",
+      "type-fest",
+>>>>>>> 1c5ff66d6e79b05882aceaa6fd87cf1bebb1720f
     ],
     "paths": {
       "@sillytavern/*": [
@@ -37,18 +42,26 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
+<<<<<<< HEAD
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"]
+=======
+    "forceConsistentCasingInFileNames": true
+>>>>>>> 1c5ff66d6e79b05882aceaa6fd87cf1bebb1720f
   },
   "include": [
     "*.d.ts",
     "src/**/*.ts",
+<<<<<<< HEAD
     "src/**/*.d.ts",
     "src/**/*.vue",
     "@types/**/*.d.ts",
     "../../../../public/**/*.js",
     "../../../../public/**/*.d.ts"
+=======
+    "../../../../**/*.js" // for intelligence
+>>>>>>> 1c5ff66d6e79b05882aceaa6fd87cf1bebb1720f
   ],
   "exclude": [
     "**/node_modules/**",
