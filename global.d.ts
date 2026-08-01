@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 //// 引入本项目自带的全局声明
 /// <reference path="./@types/iframe/event.d.ts" />
 /// <reference path="./@types/iframe/exported.tavernhelper.d.ts" />
@@ -36,5 +37,7 @@ declare module '@sillytavern/scripts/extensions' {
 }
 
 // 外部全局（由 vite externals 提供）
+=======
+>>>>>>> 594877de3d6ea4230111d3f97f6ef22c7409b0c6
 declare const hljs: typeof import('highlight.js').default;
 declare const Popper: typeof import('@popperjs/core');
