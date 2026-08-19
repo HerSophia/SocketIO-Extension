@@ -21,7 +21,7 @@
     "@types/jqueryui": "^1.12.24",
     "@types/lodash": "^4.17.25",
     "@types/mark.js": "^8.11.12",
-    "@types/toastr": "^2.1.43",
+    "@types/toastr": "^2.1.44",
     "@typescript-eslint/parser": "^8.67.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "autoprefixer": "^10.5.4",
