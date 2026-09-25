@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="example-extension-settings sx-stack-md">
     <div class="inline-drawer sx-card">
       <div class="inline-drawer-toggle inline-drawer-header">
@@ -91,6 +92,22 @@
             :value="connected ? t`断开` : t`连接`"
             @click="toggleConnection"
           />
+=======
+  <div class="example-extension-settings">
+    <div class="inline-drawer">
+      <div class="inline-drawer-toggle inline-drawer-header">
+        <b>{{ t`插件示例` }}</b>
+        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+      </div>
+      <div class="inline-drawer-content">
+        <div class="example-extension_block flex-container">
+          <input class="menu_button" type="submit" :value="t`示例按钮`" @click="handle_button_click" />
+        </div>
+
+        <div class="example-extension_block flex-container">
+          <input v-model="settings.button_selected" type="checkbox" />
+          <label for="example_setting">{{ t`示例开关` }}</label>
+>>>>>>> e000f17401bc15121c7e98e8b74f8f69bb0ff16c
         </div>
 
         <hr class="sysHR" />
@@ -102,6 +119,7 @@
 <script setup lang="ts">
 import { useSettingsStore } from '@/store/settings';
 import { storeToRefs } from 'pinia';
+<<<<<<< HEAD
 import { connectRelay, disconnectRelay, onRelayStatus, pushRegexesToServer } from '@/SocketIO';
 import { installRegexBridge } from '@/RegexBridge';
 import { ref, watch } from 'vue';
@@ -197,6 +215,14 @@ function toggleConnection() {
     ensureConnection();
   }
 }
+=======
+
+const { settings } = storeToRefs(useSettingsStore());
+
+const handle_button_click = () => {
+  toastr.success('你好呀!');
+};
+>>>>>>> e000f17401bc15121c7e98e8b74f8f69bb0ff16c
 </script>
 
 <style scoped></style>
